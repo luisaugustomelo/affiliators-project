@@ -1,6 +1,7 @@
 package services
 
 import (
+	"bufio"
 	"fmt"
 	"io"
 	"os"
@@ -11,8 +12,16 @@ import (
 	"github.com/gofiber/fiber/v2"
 )
 
+type Transaction struct {
+	Type    string
+	Date    string
+	Product string
+	Value   string
+	Seller  string
+}
+
 func UploadSingleFile(c *fiber.Ctx) error {
-	file, err := c.FormFile("image")
+	file, err := c.FormFile("file")
 	if err != nil {
 		return c.Status(fiber.StatusBadRequest).SendString(fmt.Sprintf("file err : %s", err.Error()))
 	}
@@ -37,6 +46,30 @@ func UploadSingleFile(c *fiber.Ctx) error {
 
 	if _, err = io.Copy(out, f); err != nil {
 		return c.Status(fiber.StatusInternalServerError).SendString("Internal Server Error")
+	}
+
+	file1, err := os.Open("public/single/" + filename)
+	if err != nil {
+		return err
+	}
+	defer file1.Close()
+
+	scanner := bufio.NewScanner(file1)
+	var transactions []Transaction
+	for scanner.Scan() {
+		line := scanner.Text()
+		t := Transaction{
+			Type:    strings.TrimSpace(line[0:1]),
+			Date:    strings.TrimSpace(line[1:26]),
+			Product: strings.TrimSpace(line[26:56]),
+			Value:   strings.TrimSpace(line[56:66]),
+			Seller:  strings.TrimSpace(line[66:]),
+		}
+		transactions = append(transactions, t)
+	}
+
+	if err := scanner.Err(); err != nil {
+		return err
 	}
 
 	return c.Status(fiber.StatusOK).JSON(fiber.Map{"filepath": filePath})
