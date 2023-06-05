@@ -2,12 +2,13 @@ package services
 
 import (
 	"bufio"
+	"crypto/md5"
+	"encoding/hex"
 	"fmt"
 	"io"
 	"os"
 	"path/filepath"
 	"strings"
-	"time"
 
 	"github.com/gofiber/fiber/v2"
 )
@@ -27,30 +28,43 @@ func UploadSingleFile(c *fiber.Ctx) error {
 	}
 
 	fileExt := filepath.Ext(file.Filename)
-	originalFileName := strings.TrimSuffix(filepath.Base(file.Filename), filepath.Ext(file.Filename))
-	now := time.Now()
-	filename := strings.ReplaceAll(strings.ToLower(originalFileName), " ", "-") + "-" + fmt.Sprintf("%v", now.Unix()) + fileExt
-	filePath := "http://localhost:3030/images/single/" + filename
-
-	out, err := os.Create("public/single/" + filename)
+	fileReader, err := file.Open()
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).SendString("Internal Server Error")
 	}
-	defer out.Close()
+	defer fileReader.Close()
 
-	f, err := file.Open()
-	if err != nil {
-		return c.Status(fiber.StatusInternalServerError).SendString("Internal Server Error")
-	}
-	defer f.Close()
-
-	if _, err = io.Copy(out, f); err != nil {
+	hash := md5.New()
+	if _, err := io.Copy(hash, fileReader); err != nil {
 		return c.Status(fiber.StatusInternalServerError).SendString("Internal Server Error")
 	}
 
-	file1, err := os.Open("public/single/" + filename)
+	hashInBytes := hash.Sum(nil)[:16]
+	fileHash := hex.EncodeToString(hashInBytes)
+	filename := fileHash + fileExt
+	filePath := "public/single/" + filename
+
+	_, err = os.Stat(filePath)
+	if os.IsNotExist(err) {
+		out, err := os.Create(filePath)
+		if err != nil {
+			return c.Status(fiber.StatusInternalServerError).SendString("Internal Server Error")
+		}
+		defer out.Close()
+
+		fileReader, err := file.Open()
+		if err != nil {
+			return c.Status(fiber.StatusInternalServerError).SendString("Internal Server Error")
+		}
+
+		if _, err = io.Copy(out, fileReader); err != nil {
+			return c.Status(fiber.StatusInternalServerError).SendString("Internal Server Error")
+		}
+	}
+
+	file1, err := os.Open(filePath)
 	if err != nil {
-		return err
+		return c.Status(fiber.StatusInternalServerError).SendString("Internal Server Error")
 	}
 	defer file1.Close()
 
@@ -69,8 +83,8 @@ func UploadSingleFile(c *fiber.Ctx) error {
 	}
 
 	if err := scanner.Err(); err != nil {
-		return err
+		return c.Status(fiber.StatusInternalServerError).SendString("Internal Server Error")
 	}
 
-	return c.Status(fiber.StatusOK).JSON(fiber.Map{"filepath": filePath})
+	return c.Status(fiber.StatusOK).JSON(fiber.Map{"filepath": "/images/single/" + filename})
 }
