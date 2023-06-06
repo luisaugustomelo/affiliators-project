@@ -13,6 +13,11 @@ COMPOSE_UP=$(DOCKER_COMPOSE) up
 COMPOSE_DOWN=$(DOCKER_COMPOSE) down
 DOCKER_BUILD=$(DOCKER) buildx build --platform linux/amd64,linux/arm64 -t $(BINARY_NAME) .
 
+DB_HOST=localhost
+DB_PORT=5432
+DB_NAME=hubla
+MIGRATIONS_PATH=database/migrations
+
 build:
 	$(GOBUILD) -o $(BINARY_NAME) -v
 	$(DOCKER_BUILD)
@@ -33,3 +38,9 @@ up:
 
 down:
 	$(COMPOSE_DOWN)
+
+migrate-up:
+	migrate -path $(MIGRATIONS_PATH) -database postgres://$(DB_HOST):$(DB_PORT)/$(DB_NAME) up
+
+migrate-down:
+	migrate -path $(MIGRATIONS_PATH) -database postgres://$(DB_HOST):$(DB_PORT)/$(DB_NAME) down
