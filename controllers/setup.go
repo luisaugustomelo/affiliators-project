@@ -1,15 +1,18 @@
 package controllers
 
 import (
-	"hubla-challenge/services"
-
 	"github.com/gofiber/fiber/v2"
 )
 
 func SetupRoutes(app *fiber.App) {
-	api := app.Group("/")
+	//api := app.Group("/")
 
-	api.Get("/", services.HelloWorld)
+	authController := AuthController{}
+	authController.Route(app)
 
-	api.Post("/upload", services.UploadSingleFile)
+	healthController := HealthController{}
+	healthController.Route(app)
+
+	fileController := FileController{}
+	fileController.Route(app)
 }

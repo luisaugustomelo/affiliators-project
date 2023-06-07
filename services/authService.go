@@ -9,7 +9,7 @@ import (
 
 var jwtSecret = []byte("secret")
 
-func generateJWT(id string) (string, error) {
+func GenerateJWT(id string) (string, error) {
 	// Create the Claims
 	claims := &jwt.StandardClaims{
 		ExpiresAt: time.Now().Add(time.Minute * 60).Unix(),
@@ -25,12 +25,12 @@ func generateJWT(id string) (string, error) {
 	return tokenString, nil
 }
 
-func renewJWT(c *fiber.Ctx) error {
+func RenewJWT(c *fiber.Ctx) error {
 	user := c.Locals("user").(*jwt.Token)
 	claims := user.Claims.(jwt.MapClaims)
 	id := claims["sub"].(string)
 
-	newToken, err := generateJWT(id)
+	newToken, err := GenerateJWT(id)
 	if err != nil {
 		return c.SendStatus(fiber.StatusInternalServerError)
 	}
