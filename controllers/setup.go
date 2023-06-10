@@ -7,12 +7,12 @@ import (
 func SetupRoutes(app *fiber.App) {
 	//api := app.Group("/")
 
-	authController := AuthController{}
+	authController := NewAuthController()
 	authController.Route(app)
 
-	healthController := HealthController{}
+	healthController := NewHealthController()
 	healthController.Route(app)
 
-	fileController := FileController{}
+	fileController := NewFileController()
 	fileController.Route(app)
 }

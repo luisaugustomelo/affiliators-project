@@ -1,6 +1,8 @@
 package controllers
 
 import (
+	"hubla-challenge/interfaces"
+
 	"github.com/gofiber/fiber/v2"
 )
 
@@ -11,4 +13,10 @@ func (*AuthController) Route(app *fiber.App) {
 	app.Post("/login", nil)
 	app.Post("/logout", nil)
 	app.Delete("/users/:id", nil)
+}
+
+func NewAuthController() interfaces.Router {
+	authController := &AuthController{}
+
+	return authController
 }
