@@ -1,4 +1,4 @@
-module hubla-challenge
+module github.com/luisaugustomelo/hubla-challenge
 
 go 1.18
 

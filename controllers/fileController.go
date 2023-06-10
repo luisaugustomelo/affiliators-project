@@ -1,8 +1,8 @@
 package controllers
 
 import (
-	"hubla-challenge/interfaces"
-	"hubla-challenge/services"
+	"github.com/luisaugustomelo/hubla-challenge/interfaces"
+	"github.com/luisaugustomelo/hubla-challenge/services"
 
 	"github.com/gofiber/fiber/v2"
 )

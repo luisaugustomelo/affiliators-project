@@ -3,8 +3,8 @@ package main
 import (
 	"os"
 
-	"hubla-challenge/controllers"
-	"hubla-challenge/database"
+	"github.com/luisaugustomelo/hubla-challenge/controllers"
+	"github.com/luisaugustomelo/hubla-challenge/database"
 
 	"github.com/gofiber/fiber/v2"
 	_ "github.com/joho/godotenv/autoload"
