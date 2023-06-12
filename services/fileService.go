@@ -62,13 +62,13 @@ func UploadSingleFile(c *fiber.Ctx) error {
 		}
 	}
 
-	file1, err := os.Open(filePath)
+	f, err := os.Open(filePath)
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).SendString("Internal Server Error")
 	}
-	defer file1.Close()
+	defer f.Close()
 
-	scanner := bufio.NewScanner(file1)
+	scanner := bufio.NewScanner(f)
 	var transactions []Transaction
 	for scanner.Scan() {
 		line := scanner.Text()

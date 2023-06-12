@@ -9,10 +9,10 @@ import (
 type AuthController struct{}
 
 func (*AuthController) Route(app *fiber.App) {
-	app.Get("/users/:id", nil)
-	app.Post("/login", nil)
-	app.Post("/logout", nil)
-	app.Delete("/users/:id", nil)
+	//app.Get("/users/:id", nil)
+	//app.Post("/login", nil)
+	//app.Post("/logout", nil)
+	//app.Delete("/users/:id", nil)
 }
 
 func NewAuthController() interfaces.Router {

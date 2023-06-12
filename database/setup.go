@@ -26,7 +26,6 @@ func Setup(app *fiber.App) {
 	if err != nil {
 		panic("failed to connect database")
 	}
-	defer db.Close()
 
 	models.Setup(db)
 

@@ -6,13 +6,14 @@ import (
 	"github.com/gofiber/fiber/v2"
 	"github.com/jinzhu/gorm"
 	"github.com/luisaugustomelo/hubla-challenge/database/models"
-	"github.com/luisaugustomelo/hubla-challenge/interfaces"
 	"github.com/luisaugustomelo/hubla-challenge/services"
+
+	"github.com/luisaugustomelo/hubla-challenge/interfaces"
 )
 
 type UserController struct{}
 
-// CreateUser é o controlador para criar um novo usuário.
+// CreateUser is controller to create a new user.
 func CreateUser(c *fiber.Ctx) error {
 	user := new(models.User)
 	db := c.Locals("db").(*gorm.DB)
@@ -30,7 +31,7 @@ func CreateUser(c *fiber.Ctx) error {
 	return c.Status(fiber.StatusCreated).JSON(user)
 }
 
-// GetUser é o controlador para obter um usuário.
+// GetUser is controller to get an user.
 func GetUser(c *fiber.Ctx) error {
 	id, err := strconv.Atoi(c.Params("id"))
 	db := c.Locals("db").(*gorm.DB)
@@ -49,7 +50,7 @@ func GetUser(c *fiber.Ctx) error {
 	return c.JSON(user)
 }
 
-// UpdateUser é o controlador para atualizar um usuário.
+// UpdateUser is controller to update an user.
 func UpdateUser(c *fiber.Ctx) error {
 	user := new(models.User)
 	db := c.Locals("db").(*gorm.DB)
@@ -67,7 +68,7 @@ func UpdateUser(c *fiber.Ctx) error {
 	return c.JSON(user)
 }
 
-// DeleteUser é o controlador para deletar um usuário.
+// DeleteUser is controller to delete an user.
 func DeleteUser(c *fiber.Ctx) error {
 	id, err := strconv.Atoi(c.Params("id"))
 	db := c.Locals("db").(*gorm.DB)
@@ -87,7 +88,7 @@ func DeleteUser(c *fiber.Ctx) error {
 	})
 }
 
-func (*UserController) Route(app *fiber.App) {
+func (u *UserController) Route(app *fiber.App) {
 	app.Get("/users/:id", GetUser)
 	app.Post("/create", CreateUser)
 	app.Put("/update", UpdateUser)
