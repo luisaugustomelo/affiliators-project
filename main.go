@@ -20,7 +20,7 @@ func main() {
 		PORT = ":3030"
 	}
 
-	database.Setup()
+	database.Setup(app)
 
 	app.Listen(PORT)
 }

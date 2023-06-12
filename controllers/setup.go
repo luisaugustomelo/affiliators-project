@@ -15,4 +15,7 @@ func SetupRoutes(app *fiber.App) {
 
 	fileController := NewFileController()
 	fileController.Route(app)
+
+	userController := NewUserController()
+	userController.Route(app)
 }

@@ -3,6 +3,7 @@ package database
 import (
 	"fmt"
 
+	"github.com/gofiber/fiber/v2"
 	"github.com/luisaugustomelo/hubla-challenge/database/models"
 	"github.com/luisaugustomelo/hubla-challenge/utils"
 
@@ -10,7 +11,7 @@ import (
 	_ "github.com/jinzhu/gorm/dialects/postgres"
 )
 
-func Setup() {
+func Setup(app *fiber.App) {
 
 	dbuser := utils.GetEnv("DBUSER", "admin")
 	dbpass := utils.GetEnv("DBPASS", "admin")
@@ -28,4 +29,10 @@ func Setup() {
 	defer db.Close()
 
 	models.Setup(db)
+
+	app.Use(func(c *fiber.Ctx) error {
+		c.Locals("db", db)
+		return c.Next()
+	})
+
 }
