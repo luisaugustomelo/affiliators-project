@@ -9,7 +9,6 @@ import (
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/luisaugustomelo/hubla-challenge/interfaces"
-	"github.com/luisaugustomelo/hubla-challenge/queue"
 )
 
 type FileController struct{}
@@ -41,7 +40,7 @@ func UploadSingleFile(c *fiber.Ctx) error {
 	}
 
 	// email will be decrypted based jwt
-	queue.PublishToQueue(interfaces.Message{
+	workers.PublishToQueue(interfaces.Message{
 		Email: "luis3@hubla.com",
 		File:  base64.StdEncoding.EncodeToString(bytes),
 	})

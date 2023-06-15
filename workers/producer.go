@@ -1,4 +1,4 @@
-package queue
+package workers
 
 import (
 	"encoding/json"
