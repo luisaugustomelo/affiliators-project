@@ -5,6 +5,7 @@ import (
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/luisaugustomelo/hubla-challenge/database/models"
+	"github.com/luisaugustomelo/hubla-challenge/middlewares"
 	"github.com/luisaugustomelo/hubla-challenge/services"
 	"gorm.io/gorm"
 
@@ -47,6 +48,7 @@ func GetUserByID(c *fiber.Ctx) error {
 			"error": "Failed to get user",
 		})
 	}
+
 	return c.JSON(user)
 }
 
@@ -94,7 +96,7 @@ func DeleteUser(c *fiber.Ctx) error {
 }
 
 func (u *UserController) Route(app *fiber.App) {
-	app.Get("/users/:id", services.RenewJWT, GetUserByID)
+	app.Get("/users/:id", middlewares.RenewJWT, GetUserByID)
 	app.Post("/create", CreateUser)
 	app.Put("/update/:id", UpdateUser)
 	app.Delete("/users/:id", DeleteUser)

@@ -1,16 +1,18 @@
 package controllers
 
 import (
-	"github.com/luisaugustomelo/hubla-challenge/interfaces"
-	"github.com/luisaugustomelo/hubla-challenge/services"
-
 	"github.com/gofiber/fiber/v2"
+	"github.com/luisaugustomelo/hubla-challenge/interfaces"
 )
 
 type HealthController struct{}
 
+func HealthCheck(c *fiber.Ctx) error {
+	return c.SendString("Status " + c.Status(200).String())
+}
+
 func (*HealthController) Route(app *fiber.App) {
-	app.Get("/", services.HealthCheck)
+	app.Get("/", HealthCheck)
 }
 
 func NewHealthController() interfaces.Router {

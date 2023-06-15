@@ -4,13 +4,11 @@ import (
 	"bufio"
 	"crypto/md5"
 	"encoding/hex"
-	"fmt"
 	"io"
+	"mime/multipart"
 	"os"
 	"path/filepath"
 	"strings"
-
-	"github.com/gofiber/fiber/v2"
 )
 
 type Transaction struct {
@@ -21,50 +19,66 @@ type Transaction struct {
 	Seller  string
 }
 
-func UploadSingleFile(c *fiber.Ctx) error {
-	file, err := c.FormFile("file")
+func ProcessFile(file *multipart.FileHeader) (string, error) {
+	hashedFilename, err := getHashedFilename(file)
 	if err != nil {
-		return c.Status(fiber.StatusBadRequest).SendString(fmt.Sprintf("file err : %s", err.Error()))
+		return "", err
 	}
 
+	filePath := "public/single/" + hashedFilename
+	err = saveFile(file, filePath)
+	if err != nil {
+		return "", err
+	}
+
+	return hashedFilename, nil
+}
+
+func getHashedFilename(file *multipart.FileHeader) (string, error) {
 	fileExt := filepath.Ext(file.Filename)
 	fileReader, err := file.Open()
 	if err != nil {
-		return c.Status(fiber.StatusInternalServerError).SendString("Internal Server Error")
+		return "", err
 	}
 	defer fileReader.Close()
 
 	hash := md5.New()
 	if _, err := io.Copy(hash, fileReader); err != nil {
-		return c.Status(fiber.StatusInternalServerError).SendString("Internal Server Error")
+		return "", err
 	}
 
 	hashInBytes := hash.Sum(nil)[:16]
 	fileHash := hex.EncodeToString(hashInBytes)
-	filename := fileHash + fileExt
-	filePath := "public/single/" + filename
 
-	_, err = os.Stat(filePath)
-	if os.IsNotExist(err) {
-		out, err := os.Create(filePath)
-		if err != nil {
-			return c.Status(fiber.StatusInternalServerError).SendString("Internal Server Error")
-		}
-		defer out.Close()
+	return fileHash + fileExt, nil
+}
 
-		fileReader, err := file.Open()
-		if err != nil {
-			return c.Status(fiber.StatusInternalServerError).SendString("Internal Server Error")
-		}
-
-		if _, err = io.Copy(out, fileReader); err != nil {
-			return c.Status(fiber.StatusInternalServerError).SendString("Internal Server Error")
-		}
+func saveFile(file *multipart.FileHeader, filePath string) error {
+	_, err := os.Stat(filePath)
+	if !os.IsNotExist(err) {
+		return nil
 	}
 
+	out, err := os.Create(filePath)
+	if err != nil {
+		return err
+	}
+	defer out.Close()
+
+	fileReader, err := file.Open()
+	if err != nil {
+		return err
+	}
+
+	_, err = io.Copy(out, fileReader)
+	return err
+}
+
+func ReadTransactions(filename string) ([]Transaction, error) {
+	filePath := "public/single/" + filename
 	f, err := os.Open(filePath)
 	if err != nil {
-		return c.Status(fiber.StatusInternalServerError).SendString("Internal Server Error")
+		return nil, err
 	}
 	defer f.Close()
 
@@ -82,9 +96,5 @@ func UploadSingleFile(c *fiber.Ctx) error {
 		transactions = append(transactions, t)
 	}
 
-	if err := scanner.Err(); err != nil {
-		return c.Status(fiber.StatusInternalServerError).SendString("Internal Server Error")
-	}
-
-	return c.Status(fiber.StatusOK).JSON(fiber.Map{"filepath": "/images/single/" + filename})
+	return transactions, scanner.Err()
 }
