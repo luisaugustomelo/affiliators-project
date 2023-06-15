@@ -2,12 +2,12 @@ package services
 
 import (
 	"bufio"
+	"bytes"
 	"crypto/md5"
 	"encoding/hex"
 	"io"
-	"mime/multipart"
+	"io/ioutil"
 	"os"
-	"path/filepath"
 	"strings"
 )
 
@@ -19,14 +19,14 @@ type Transaction struct {
 	Seller  string
 }
 
-func ProcessFile(file *multipart.FileHeader) (string, error) {
-	hashedFilename, err := getHashedFilename(file)
+func ProcessFile(encodedString string) (string, error) {
+	hashedFilename, err := getHashedFilename(encodedString)
 	if err != nil {
 		return "", err
 	}
 
 	filePath := "public/single/" + hashedFilename
-	err = saveFile(file, filePath)
+	err = saveFile([]byte(encodedString), filePath)
 	if err != nil {
 		return "", err
 	}
@@ -34,44 +34,22 @@ func ProcessFile(file *multipart.FileHeader) (string, error) {
 	return hashedFilename, nil
 }
 
-func getHashedFilename(file *multipart.FileHeader) (string, error) {
-	fileExt := filepath.Ext(file.Filename)
-	fileReader, err := file.Open()
-	if err != nil {
-		return "", err
-	}
-	defer fileReader.Close()
+func saveFile(data []byte, filepath string) error {
+	return ioutil.WriteFile(filepath, data, 0644)
+}
+
+func getHashedFilename(data string) (string, error) {
+	//fileExt := filepath.Ext(filename)
 
 	hash := md5.New()
-	if _, err := io.Copy(hash, fileReader); err != nil {
+	if _, err := io.Copy(hash, bytes.NewReader([]byte(data))); err != nil {
 		return "", err
 	}
 
 	hashInBytes := hash.Sum(nil)[:16]
 	fileHash := hex.EncodeToString(hashInBytes)
 
-	return fileHash + fileExt, nil
-}
-
-func saveFile(file *multipart.FileHeader, filePath string) error {
-	_, err := os.Stat(filePath)
-	if !os.IsNotExist(err) {
-		return nil
-	}
-
-	out, err := os.Create(filePath)
-	if err != nil {
-		return err
-	}
-	defer out.Close()
-
-	fileReader, err := file.Open()
-	if err != nil {
-		return err
-	}
-
-	_, err = io.Copy(out, fileReader)
-	return err
+	return fileHash + ".txt", nil
 }
 
 func ReadTransactions(filename string) ([]Transaction, error) {

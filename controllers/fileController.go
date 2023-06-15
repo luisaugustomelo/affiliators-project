@@ -1,12 +1,15 @@
 package controllers
 
 import (
+	"encoding/base64"
 	"fmt"
-
-	"github.com/luisaugustomelo/hubla-challenge/interfaces"
-	"github.com/luisaugustomelo/hubla-challenge/services"
+	"io/ioutil"
+	"path/filepath"
+	"strings"
 
 	"github.com/gofiber/fiber/v2"
+	"github.com/luisaugustomelo/hubla-challenge/interfaces"
+	"github.com/luisaugustomelo/hubla-challenge/queue"
 )
 
 type FileController struct{}
@@ -21,17 +24,29 @@ func UploadSingleFile(c *fiber.Ctx) error {
 		return fiberError(c, fiber.StatusBadRequest, "File error", err)
 	}
 
-	filename, err := services.ProcessFile(file)
-	if err != nil {
-		return fiberError(c, fiber.StatusInternalServerError, "Failed to process file", err)
+	// Check if the file extension is .txt
+	if strings.ToLower(filepath.Ext(file.Filename)) != ".txt" {
+		return fiberError(c, fiber.StatusBadRequest, "File error", fmt.Errorf("only .txt files are allowed"))
 	}
 
-	transactions, err := services.ReadTransactions(filename)
+	fileReader, err := file.Open()
 	if err != nil {
-		return fiberError(c, fiber.StatusInternalServerError, "Failed to read transactions", err)
+		return err
+	}
+	defer fileReader.Close()
+
+	bytes, err := ioutil.ReadAll(fileReader)
+	if err != nil {
+		return err
 	}
 
-	return c.Status(fiber.StatusOK).JSON(fiber.Map{"filepath": "/images/single/" + filename, "transactions": transactions})
+	// email will be decrypted based jwt
+	queue.PublishToQueue(interfaces.Message{
+		Email: "luis3@hubla.com",
+		File:  base64.StdEncoding.EncodeToString(bytes),
+	})
+
+	return c.Status(fiber.StatusOK).JSON(fiber.Map{"filepath": "/images/single/ submited as success!"})
 }
 
 func (*FileController) Route(app *fiber.App) {

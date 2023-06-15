@@ -16,3 +16,8 @@ type Datastore interface {
 	Delete(value interface{}, where ...interface{}) *gorm.DB
 	Where(query interface{}, args ...interface{}) *gorm.DB
 }
+
+type Message struct {
+	Email string `json:"email"`
+	File  string `json:"file"`
+}
