@@ -6,9 +6,10 @@ import (
 	"github.com/gofiber/fiber/v2"
 	"github.com/luisaugustomelo/hubla-challenge/database/models"
 	"github.com/luisaugustomelo/hubla-challenge/utils"
+	"gorm.io/driver/postgres"
 
-	"github.com/jinzhu/gorm"
-	_ "github.com/jinzhu/gorm/dialects/postgres"
+	_ "gorm.io/driver/postgres"
+	"gorm.io/gorm"
 )
 
 func Setup(app *fiber.App) {
@@ -18,10 +19,10 @@ func Setup(app *fiber.App) {
 	dbhost := utils.GetEnv("DBHOST", "localhost")
 	dbname := utils.GetEnv("DBNAME", "hubla")
 
-	db, err := gorm.Open("postgres",
-		fmt.Sprintf("host=%s user=%s dbname=%s password=%s sslmode=disable",
-			dbhost, dbuser, dbname, dbpass),
-	)
+	dsn := fmt.Sprintf("host=%s user=%s dbname=%s password=%s sslmode=disable",
+		dbhost, dbuser, dbname, dbpass)
+
+	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{})
 
 	if err != nil {
 		panic("failed to connect database")

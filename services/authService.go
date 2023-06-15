@@ -1,6 +1,7 @@
 package services
 
 import (
+	"fmt"
 	"time"
 
 	"github.com/gofiber/fiber/v2"
@@ -26,11 +27,19 @@ func GenerateJWT(id string) (string, error) {
 }
 
 func RenewJWT(c *fiber.Ctx) error {
-	user := c.Locals("user").(*jwt.Token)
-	claims := user.Claims.(jwt.MapClaims)
-	id := claims["sub"].(string)
+	token := c.Get("Authorization")
 
-	newToken, err := GenerateJWT(id)
+	t, err := jwt.Parse(token, func(token *jwt.Token) (interface{}, error) {
+		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
+			return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
+		}
+		return []byte(jwtSecret), nil
+	})
+
+	claims := t.Claims.(jwt.MapClaims)
+	idValue := claims["jti"].(string)
+
+	newToken, err := GenerateJWT(idValue)
 	if err != nil {
 		return c.SendStatus(fiber.StatusInternalServerError)
 	}

@@ -3,10 +3,10 @@ package services
 import (
 	"testing"
 
-	"github.com/jinzhu/gorm"
 	"github.com/luisaugustomelo/hubla-challenge/database/models"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
+	"gorm.io/gorm"
 )
 
 // MockedDb is a mocked implementation of *gorm.DB.
@@ -34,9 +34,14 @@ func (mdb *MockedDb) Delete(value interface{}, where ...interface{}) *gorm.DB {
 	return args.Get(0).(*gorm.DB)
 }
 
+func (mdb *MockedDb) Where(value interface{}, where ...interface{}) *gorm.DB {
+	args := mdb.Called(value, where)
+	return args.Get(0).(*gorm.DB)
+}
+
 func TestCreateUser(t *testing.T) {
 	mockDb := new(MockedDb)
-	mockUser := &models.User{ID: 1, Name: "Test", Email: "test@example.com"}
+	mockUser := &models.User{Name: "Test", Email: "test@example.com"}
 
 	mockDb.On("Create", mockUser).Return(mockDb)
 	mockDb.On("Error").Return(nil)
@@ -48,12 +53,12 @@ func TestCreateUser(t *testing.T) {
 
 func TestGetUser(t *testing.T) {
 	mockDb := new(MockedDb)
-	mockUser := &models.User{ID: 1, Name: "Test", Email: "test@example.com"}
+	mockUser := &models.User{Name: "Test", Email: "test@example.com"}
 
 	mockDb.On("First", mockUser, []interface{}{1}).Return(mockDb)
 	mockDb.On("Error").Return(nil)
 
-	user, err := GetUser(mockDb, 1)
+	user, err := GetUserByID(mockDb, 1)
 
 	assert.Nil(t, err)
 	assert.Equal(t, mockUser, user)
@@ -61,12 +66,12 @@ func TestGetUser(t *testing.T) {
 
 func TestUpdateUser(t *testing.T) {
 	mockDb := new(MockedDb)
-	mockUser := &models.User{ID: 1, Name: "Test", Email: "test@example.com"}
+	mockUser := &models.User{Name: "Test", Email: "test@example.com"}
 
 	mockDb.On("Save", mockUser).Return(mockDb)
 	mockDb.On("Error").Return(nil)
 
-	err := UpdateUser(mockDb, mockUser)
+	err := UpdateUser(mockDb, 1, mockUser)
 
 	assert.Nil(t, err)
 }

@@ -2,7 +2,7 @@ package interfaces
 
 import (
 	"github.com/gofiber/fiber/v2"
-	"github.com/jinzhu/gorm"
+	"gorm.io/gorm"
 )
 
 type Router interface {
@@ -14,4 +14,5 @@ type Datastore interface {
 	First(out interface{}, where ...interface{}) *gorm.DB
 	Save(value interface{}) *gorm.DB
 	Delete(value interface{}, where ...interface{}) *gorm.DB
+	Where(query interface{}, args ...interface{}) *gorm.DB
 }

@@ -4,9 +4,9 @@ import (
 	"strconv"
 
 	"github.com/gofiber/fiber/v2"
-	"github.com/jinzhu/gorm"
 	"github.com/luisaugustomelo/hubla-challenge/database/models"
 	"github.com/luisaugustomelo/hubla-challenge/services"
+	"gorm.io/gorm"
 
 	"github.com/luisaugustomelo/hubla-challenge/interfaces"
 )
@@ -32,7 +32,7 @@ func CreateUser(c *fiber.Ctx) error {
 }
 
 // GetUser is controller to get an user.
-func GetUser(c *fiber.Ctx) error {
+func GetUserByID(c *fiber.Ctx) error {
 	id, err := strconv.Atoi(c.Params("id"))
 	db := c.Locals("db").(*gorm.DB)
 
@@ -41,7 +41,7 @@ func GetUser(c *fiber.Ctx) error {
 			"error": "Invalid id",
 		})
 	}
-	user, err := services.GetUser(db, uint(id))
+	user, err := services.GetUserByID(db, uint(id))
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 			"error": "Failed to get user",
@@ -52,6 +52,11 @@ func GetUser(c *fiber.Ctx) error {
 
 // UpdateUser is controller to update an user.
 func UpdateUser(c *fiber.Ctx) error {
+	id, err := strconv.Atoi(c.Params("id"))
+	if err != nil {
+		return err
+	}
+
 	user := new(models.User)
 	db := c.Locals("db").(*gorm.DB)
 
@@ -60,7 +65,7 @@ func UpdateUser(c *fiber.Ctx) error {
 			"error": "Cannot parse JSON",
 		})
 	}
-	if err := services.UpdateUser(db, user); err != nil {
+	if err := services.UpdateUser(db, uint(id), user); err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 			"error": "Failed to update user",
 		})
@@ -89,9 +94,9 @@ func DeleteUser(c *fiber.Ctx) error {
 }
 
 func (u *UserController) Route(app *fiber.App) {
-	app.Get("/users/:id", GetUser)
+	app.Get("/users/:id", services.RenewJWT, GetUserByID)
 	app.Post("/create", CreateUser)
-	app.Put("/update", UpdateUser)
+	app.Put("/update/:id", UpdateUser)
 	app.Delete("/users/:id", DeleteUser)
 }
 
