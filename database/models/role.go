@@ -4,6 +4,7 @@ import (
 	"gorm.io/gorm"
 )
 
-type Product struct {
+type Role struct {
 	gorm.Model
+	Description string
 }

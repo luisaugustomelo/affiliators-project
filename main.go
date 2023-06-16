@@ -7,6 +7,7 @@ import (
 	_ "github.com/joho/godotenv/autoload"
 	"github.com/luisaugustomelo/hubla-challenge/controllers"
 	"github.com/luisaugustomelo/hubla-challenge/database"
+	"github.com/luisaugustomelo/hubla-challenge/workers"
 )
 
 func main() {

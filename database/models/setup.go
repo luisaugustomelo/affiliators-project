@@ -6,9 +6,10 @@ import (
 
 var models = []interface{}{
 	&User{},
-	&Product{},
-	&Affiliate{},
-	&Creator{},
+	&ProcessingQueue{},
+	&Sale{},
+	&Sale_Type{},
+	&Role{},
 	// Adicione mais modelos aqui conforme necessário
 }
 

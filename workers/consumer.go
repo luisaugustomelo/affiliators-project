@@ -61,19 +61,19 @@ func ConsumerToQueue() {
 				continue
 			}
 
-			fileContent, err := base64.StdEncoding.DecodeString(m.File)
+			fileContent, _ := base64.StdEncoding.DecodeString(m.File)
 			filename, _ := services.ProcessFile(string(fileContent))
 			//if err != nil {
 			//	return fiberError(c, fiber.StatusInternalServerError, "Failed to process file", err)
 			//}
 
-			transactions, _ := services.ReadTransactions(filename)
+			sales, _ := services.ReadSales(filename)
 			//if err != nil {
 			//	return fiberError(c, fiber.StatusInternalServerError, "Failed to read transactions", err)
 			//}
 
 			//return c.Status(fiber.StatusOK).JSON(fiber.Map{"filepath": "/images/single/" + filename, "transactions": transactions})
-			fmt.Printf("Received a message: %s %s %v\n", m.Email, m.File, transactions)
+			fmt.Printf("Received a message: %s %s %v\n", m.Email, m.File, sales)
 		}
 	}()
 }

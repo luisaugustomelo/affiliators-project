@@ -44,3 +44,6 @@ migrate-up:
 
 migrate-down:
 	migrate -path $(MIGRATIONS_PATH) -database postgres://$(DB_HOST):$(DB_PORT)/$(DB_NAME) down
+
+migrate-create:
+	migrate create -ext sql -dir $(MIGRATIONS_PATH) $(filename)

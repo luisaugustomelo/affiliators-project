@@ -16,6 +16,10 @@ RUN go mod download
 # Copy the source from the current directory to the Working Directory inside the container
 COPY . .
 
+# Install migration tool
+RUN go install -tags 'postgres' github.com/golang-migrate/migrate/v4/cmd/migrate@latest
+
+
 # Build the Go app
 RUN go build -o main .
 

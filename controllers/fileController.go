@@ -9,6 +9,7 @@ import (
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/luisaugustomelo/hubla-challenge/interfaces"
+	"github.com/luisaugustomelo/hubla-challenge/workers"
 )
 
 type FileController struct{}

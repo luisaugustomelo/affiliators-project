@@ -9,15 +9,9 @@ import (
 	"io/ioutil"
 	"os"
 	"strings"
-)
 
-type Transaction struct {
-	Type    string
-	Date    string
-	Product string
-	Value   string
-	Seller  string
-}
+	"github.com/luisaugustomelo/hubla-challenge/database/models"
+)
 
 func ProcessFile(encodedString string) (string, error) {
 	hashedFilename, err := getHashedFilename(encodedString)
@@ -39,8 +33,6 @@ func saveFile(data []byte, filepath string) error {
 }
 
 func getHashedFilename(data string) (string, error) {
-	//fileExt := filepath.Ext(filename)
-
 	hash := md5.New()
 	if _, err := io.Copy(hash, bytes.NewReader([]byte(data))); err != nil {
 		return "", err
@@ -52,7 +44,7 @@ func getHashedFilename(data string) (string, error) {
 	return fileHash + ".txt", nil
 }
 
-func ReadTransactions(filename string) ([]Transaction, error) {
+func ReadSales(filename string) ([]models.Sale, error) {
 	filePath := "public/single/" + filename
 	f, err := os.Open(filePath)
 	if err != nil {
@@ -61,18 +53,18 @@ func ReadTransactions(filename string) ([]Transaction, error) {
 	defer f.Close()
 
 	scanner := bufio.NewScanner(f)
-	var transactions []Transaction
+	var sales []models.Sale
 	for scanner.Scan() {
 		line := scanner.Text()
-		t := Transaction{
+		t := models.Sale{
 			Type:    strings.TrimSpace(line[0:1]),
 			Date:    strings.TrimSpace(line[1:26]),
 			Product: strings.TrimSpace(line[26:56]),
 			Value:   strings.TrimSpace(line[56:66]),
 			Seller:  strings.TrimSpace(line[66:]),
 		}
-		transactions = append(transactions, t)
+		sales = append(sales, t)
 	}
 
-	return transactions, scanner.Err()
+	return sales, scanner.Err()
 }
