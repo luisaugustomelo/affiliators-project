@@ -44,7 +44,7 @@ func getHashedFilename(data string) (string, error) {
 	return fileHash + ".txt", nil
 }
 
-func ReadSales(filename string) ([]models.Sale, error) {
+func ReadSales(filename string) ([]models.SalesFile, error) {
 	filePath := "public/single/" + filename
 	f, err := os.Open(filePath)
 	if err != nil {
@@ -53,10 +53,10 @@ func ReadSales(filename string) ([]models.Sale, error) {
 	defer f.Close()
 
 	scanner := bufio.NewScanner(f)
-	var sales []models.Sale
+	var sales []models.SalesFile
 	for scanner.Scan() {
 		line := scanner.Text()
-		t := models.Sale{
+		t := models.SalesFile{
 			Type:    strings.TrimSpace(line[0:1]),
 			Date:    strings.TrimSpace(line[1:26]),
 			Product: strings.TrimSpace(line[26:56]),

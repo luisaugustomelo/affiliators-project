@@ -6,9 +6,9 @@ import (
 
 var models = []interface{}{
 	&User{},
-	&ProcessingQueue{},
-	&Sale{},
-	&Sale_Type{},
+	&QueueProcessing{},
+	&SalesFile{},
+	&SaleType{},
 	&Role{},
 	// Adicione mais modelos aqui conforme necessário
 }

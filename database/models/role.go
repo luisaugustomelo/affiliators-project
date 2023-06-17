@@ -7,4 +7,5 @@ import (
 type Role struct {
 	gorm.Model
 	Description string
+	User        User `gorm:"foreignKey:Role"`
 }

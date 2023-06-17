@@ -4,9 +4,9 @@ import (
 	"gorm.io/gorm"
 )
 
-type ProcessingQueue struct {
+type QueueProcessing struct {
 	gorm.Model
+	UserId uint `gorm:"foreignKey:user_id"`
 	Status string
-	UserId uint
 	Hash   string
 }
