@@ -38,9 +38,10 @@ func RenewJWT(c *fiber.Ctx) error {
 		})
 	}
 
-	idValue := claims["sub"].(string)
+	email := claims["sub"].(string)
+	id := claims["id"].(uint)
 
-	newToken, err := services.GenerateJWT(idValue)
+	newToken, err := services.GenerateJWT(email, id)
 	if err != nil {
 		return c.SendStatus(fiber.StatusInternalServerError)
 	}

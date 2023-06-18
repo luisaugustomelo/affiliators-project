@@ -28,7 +28,7 @@ func Auth(c *fiber.Ctx) error {
 		return c.JSON("user not authorized")
 	}
 
-	jwt, err := services.GenerateJWT(user.Email)
+	jwt, err := services.GenerateJWT(user.Email, userExists.ID)
 
 	if err != nil {
 		return c.JSON(err)

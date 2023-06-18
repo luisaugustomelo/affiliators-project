@@ -12,9 +12,12 @@ import (
 
 func main() {
 	app := fiber.New()
-	database.Setup(app)
+	db, err := database.Setup(app)
+	if err != nil {
+		panic(err)
+	}
 
-	workers.ConsumerToQueue()
+	workers.ConsumerToQueue(db)
 
 	controllers.SetupRoutes(app)
 

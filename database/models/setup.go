@@ -10,6 +10,7 @@ var models = []interface{}{
 	&SalesFile{},
 	&SaleType{},
 	&Role{},
+	&Balance{},
 	// Adicione mais modelos aqui conforme necessário
 }
 

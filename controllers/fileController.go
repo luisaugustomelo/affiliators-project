@@ -10,6 +10,7 @@ import (
 	"github.com/gofiber/fiber/v2"
 	"github.com/luisaugustomelo/hubla-challenge/interfaces"
 	"github.com/luisaugustomelo/hubla-challenge/workers"
+	"gorm.io/gorm"
 )
 
 type FileController struct{}
@@ -41,10 +42,12 @@ func UploadSingleFile(c *fiber.Ctx) error {
 	}
 
 	// email will be decrypted based jwt
+	db := c.Locals("db").(*gorm.DB)
 	workers.PublishToQueue(interfaces.Message{
-		Email: "luis3@hubla.com",
-		File:  base64.StdEncoding.EncodeToString(bytes),
-	})
+		UserId: 1,
+		Email:  "luis@hubla.com",
+		File:   base64.StdEncoding.EncodeToString(bytes),
+	}, db)
 
 	return c.Status(fiber.StatusOK).JSON(fiber.Map{"filepath": "/images/single/ submited as success!"})
 }

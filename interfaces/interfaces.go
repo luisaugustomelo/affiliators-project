@@ -18,6 +18,7 @@ type Datastore interface {
 }
 
 type Message struct {
-	Email string `json:"email"`
-	File  string `json:"file"`
+	UserId uint
+	Email  string `json:"email"`
+	File   string `json:"file"`
 }

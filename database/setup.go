@@ -12,7 +12,7 @@ import (
 	"gorm.io/gorm"
 )
 
-func Setup(app *fiber.App) {
+func Setup(app *fiber.App) (*gorm.DB, error) {
 
 	dbuser := utils.GetEnv("DBUSER", "admin")
 	dbpass := utils.GetEnv("DBPASS", "admin")
@@ -26,6 +26,7 @@ func Setup(app *fiber.App) {
 
 	if err != nil {
 		panic("failed to connect database")
+		return nil, err
 	}
 
 	models.Setup(db)
@@ -35,4 +36,5 @@ func Setup(app *fiber.App) {
 		return c.Next()
 	})
 
+	return db, nil
 }

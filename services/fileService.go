@@ -8,10 +8,13 @@ import (
 	"io"
 	"io/ioutil"
 	"os"
+	"strconv"
 	"strings"
 
 	"github.com/luisaugustomelo/hubla-challenge/database/models"
 )
+
+var productToProducer map[string]string
 
 func ProcessFile(encodedString string) (string, error) {
 	hashedFilename, err := getHashedFilename(encodedString)
@@ -44,11 +47,46 @@ func getHashedFilename(data string) (string, error) {
 	return fileHash + ".txt", nil
 }
 
-func ReadSales(filename string) ([]models.SalesFile, error) {
+func mapProductToProducer(salesFiles []models.SalesFile) map[string]string {
+	productToProducer := make(map[string]string)
+
+	for _, sale := range salesFiles {
+		if sale.SalesType == 1 {
+			productToProducer[sale.Product] = sale.Seller
+		}
+	}
+
+	return productToProducer
+}
+
+// função para calcular o saldo para vendedores
+func calculateBalances(sales []models.SalesFile) map[string]float64 {
+	productToProducer = mapProductToProducer(sales)
+	var balances = make(map[string]float64)
+
+	for _, t := range sales {
+		// checar o tipo de transação
+		switch t.SalesType {
+		case 1, 4:
+			// paga para o produto, o vendedor é o produtor
+			balances[t.Seller] += t.Value
+		case 2:
+			// debita da conta do produtor
+			producer := productToProducer[t.Product]
+			balances[producer] += t.Value
+		case 3:
+			balances[t.Seller] -= t.Value
+
+		}
+	}
+	return balances
+}
+
+func ReadSales(filename string) ([]models.SalesFile, []models.Balance, error) {
 	filePath := "public/single/" + filename
 	f, err := os.Open(filePath)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	defer f.Close()
 
@@ -56,15 +94,53 @@ func ReadSales(filename string) ([]models.SalesFile, error) {
 	var sales []models.SalesFile
 	for scanner.Scan() {
 		line := scanner.Text()
+		salesType, err := strconv.Atoi(line[0:1])
+		if err != nil {
+			return nil, nil, err
+		}
+
+		cents, err := strconv.Atoi(line[56:66])
+		if err != nil {
+			return nil, nil, err
+		}
+
+		value := float64(cents) / 100.0
 		t := models.SalesFile{
-			Type:    strings.TrimSpace(line[0:1]),
-			Date:    strings.TrimSpace(line[1:26]),
-			Product: strings.TrimSpace(line[26:56]),
-			Value:   strings.TrimSpace(line[56:66]),
-			Seller:  strings.TrimSpace(line[66:]),
+			SalesType: uint(salesType),
+			Date:      strings.TrimSpace(line[1:26]),
+			Product:   strings.TrimSpace(line[26:56]),
+			Value:     value,
+			Seller:    strings.TrimSpace(line[66:]),
 		}
 		sales = append(sales, t)
 	}
 
-	return sales, scanner.Err()
+	balances := calculateBalances(sales)
+
+	var finalBalances []models.Balance
+	for index, balance := range balances {
+		isProducer := false
+		for _, producer := range productToProducer {
+			if producer == index {
+				isProducer = true
+				break
+			}
+		}
+
+		if isProducer {
+			finalBalances = append(finalBalances, models.Balance{
+				Balance: balance,
+				Role:    1,
+				Name:    index,
+			})
+			continue
+		}
+
+		finalBalances = append(finalBalances, models.Balance{
+			Balance: balance,
+			Role:    2,
+			Name:    index,
+		})
+	}
+	return sales, finalBalances, scanner.Err()
 }
