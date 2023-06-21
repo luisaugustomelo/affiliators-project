@@ -2,23 +2,51 @@
 # https://github.com/github/gitignore/blob/main/community/Golang/Go.AllowList.gitignore
 #
 # Binaries for programs and plugins
-*.exe
-*.exe~
-*.dll
-*.so
-*.dylib
+hubla-api/*.exe
+hubla-api/*.exe~
+hubla-api/*.dll
+hubla-api/*.so
+hubla-api/*.dylib
 
 # Test binary, built with `go test -c`
-*.test
+hubla-api/*.test
 
 # Output of the go coverage tool, specifically when used with LiteIDE
-*.out
+hubla-api/*.out
 
 # Dependency directories (remove the comment below to include it)
 # vendor/
 
 # Go workspace file
-go.work
+hubla-api/go.work
 
-.idea
-.DS_Store
+hubla-api/.idea
+hubla-api/.DS_Store
+
+
+
+# See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
+
+# dependencies
+hubla-web/node_modules
+hubla-web/.pnp
+hubla-web/.pnp.js
+
+# testing
+hubla-web/coverage
+
+# production
+hubla-web/build
+
+# misc
+hubla-web/.DS_Store
+hubla-web/.env.local
+hubla-web/.env.development.local
+hubla-web/.env.test.local
+hubla-web/.env.production.local
+
+hubla-web/npm-debug.log*
+hubla-web/yarn-debug.log*
+hubla-web/yarn-error.log*
+hubla-web/package-lock.json
+
