@@ -12,21 +12,21 @@ import (
 	"gorm.io/gorm"
 )
 
-func PublishToQueue(message interfaces.Message, db *gorm.DB) error {
+func PublishToQueue(message interfaces.Message, db *gorm.DB) (*models.QueueProcessing, error) {
 	amqpHost := utils.GetEnv("AMQPHOST", "amqp://guest:guest@localhost:5672/")
 	conn, err := amqp.Dial(amqpHost)
 	if err != nil {
 		fmt.Println(err)
-		return err
+		return nil, err
 	}
-	defer conn.Close()
+	//defer conn.Close()
 
 	ch, err := conn.Channel()
 	if err != nil {
 		fmt.Println(err)
-		return err
+		return nil, err
 	}
-	defer ch.Close()
+	//defer ch.Close()
 
 	channelName := utils.GetEnv("CNAME", "hubla-sales-queue")
 	q, err := ch.QueueDeclare(
@@ -39,13 +39,13 @@ func PublishToQueue(message interfaces.Message, db *gorm.DB) error {
 	)
 	if err != nil {
 		fmt.Println(err)
-		return err
+		return nil, err
 	}
 
 	body, err := json.Marshal(message)
 	if err != nil {
 		fmt.Println(err)
-		return err
+		return nil, err
 	}
 
 	err = ch.Publish(
@@ -60,7 +60,7 @@ func PublishToQueue(message interfaces.Message, db *gorm.DB) error {
 	)
 	if err != nil {
 		fmt.Println(err)
-		return err
+		return nil, err
 	}
 
 	mq := &models.QueueProcessing{}
@@ -71,8 +71,8 @@ func PublishToQueue(message interfaces.Message, db *gorm.DB) error {
 
 	if err := db.Save(&mq).Error; err != nil {
 		log.Print(err)
-		return err
+		return nil, err
 	}
 
-	return nil
+	return mq, nil
 }

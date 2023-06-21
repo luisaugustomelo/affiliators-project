@@ -39,7 +39,10 @@ func Auth(c *fiber.Ctx) error {
 		return c.JSON(err)
 	}
 
-	return c.JSON(jwt)
+	return c.JSON(map[string]interface{}{
+		"token": jwt,
+		"user":  userExists.ID,
+	})
 }
 
 func (*AuthController) Route(app *fiber.App) {

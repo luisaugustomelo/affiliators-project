@@ -22,3 +22,8 @@ type Message struct {
 	Email  string `json:"email"`
 	File   string `json:"file"`
 }
+
+type Credentials struct {
+	Email string `json:"email"`
+	Id    uint   `json:"id"`
+}

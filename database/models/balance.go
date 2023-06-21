@@ -9,4 +9,5 @@ type Balance struct {
 	Balance float64
 	Role    uint `gorm:"foreignKey:role"`
 	Name    string
+	Hash    string
 }

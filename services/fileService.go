@@ -5,6 +5,8 @@ import (
 	"bytes"
 	"crypto/md5"
 	"encoding/hex"
+	"errors"
+	"fmt"
 	"io"
 	"io/ioutil"
 	"os"
@@ -12,6 +14,8 @@ import (
 	"strings"
 
 	"github.com/luisaugustomelo/hubla-challenge/database/models"
+	"github.com/luisaugustomelo/hubla-challenge/interfaces"
+	"gorm.io/gorm"
 )
 
 var productToProducer map[string]string
@@ -127,20 +131,47 @@ func ReadSales(filename string) ([]models.SalesFile, []models.Balance, error) {
 			}
 		}
 
+		userBalance := models.Balance{
+			Balance: balance,
+			Role:    1,
+			Name:    index,
+			Hash:    strings.TrimSuffix(filename, ".txt"),
+		}
+
 		if isProducer {
-			finalBalances = append(finalBalances, models.Balance{
-				Balance: balance,
-				Role:    1,
-				Name:    index,
-			})
+			finalBalances = append(finalBalances, userBalance)
 			continue
 		}
 
-		finalBalances = append(finalBalances, models.Balance{
-			Balance: balance,
-			Role:    2,
-			Name:    index,
-		})
+		userBalance.Role = 2
+		finalBalances = append(finalBalances, userBalance)
 	}
 	return sales, finalBalances, scanner.Err()
+}
+
+func CheckFileStatus(db interfaces.Datastore, id int) ([]models.Balance, error) {
+	mq := &models.QueueProcessing{}
+	if err := db.Where("id = ?", id).First(mq).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, fmt.Errorf("process not found")
+		}
+		return nil, fmt.Errorf("failed to get process status")
+	}
+
+	if mq.Status == "success" {
+		var balances []models.Balance
+		if err := db.Where("hash = ?", strings.TrimSuffix(mq.Hash, ".txt")).Find(&balances).Error; err != nil {
+			if errors.Is(err, gorm.ErrRecordNotFound) {
+				return nil, fmt.Errorf("balances not found")
+			}
+			return nil, fmt.Errorf("failed to get balances")
+		}
+		return balances, nil
+	}
+
+	if mq.Status == "error" {
+		return nil, fmt.Errorf("error to proccess file")
+	}
+
+	return nil, nil
 }

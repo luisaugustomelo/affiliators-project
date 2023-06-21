@@ -6,6 +6,7 @@ import (
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/golang-jwt/jwt"
+	"github.com/luisaugustomelo/hubla-challenge/interfaces"
 	"github.com/luisaugustomelo/hubla-challenge/services"
 )
 
@@ -39,15 +40,19 @@ func RenewJWT(c *fiber.Ctx) error {
 	}
 
 	email := claims["sub"].(string)
-	id := claims["id"].(uint)
+	id := claims["id"].(float64)
 
-	newToken, err := services.GenerateJWT(email, id)
+	newToken, err := services.GenerateJWT(email, uint(id))
 	if err != nil {
 		return c.SendStatus(fiber.StatusInternalServerError)
 	}
 
 	// Set the new token in the response header
 	c.Set("X-New-Token", newToken)
+	c.Locals("user", interfaces.Credentials{
+		Email: email,
+		Id:    uint(id),
+	})
 
 	return c.Next()
 }

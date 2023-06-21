@@ -5,10 +5,13 @@ import (
 	"fmt"
 	"io/ioutil"
 	"path/filepath"
+	"strconv"
 	"strings"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/luisaugustomelo/hubla-challenge/interfaces"
+	"github.com/luisaugustomelo/hubla-challenge/middlewares"
+	"github.com/luisaugustomelo/hubla-challenge/services"
 	"github.com/luisaugustomelo/hubla-challenge/workers"
 	"gorm.io/gorm"
 )
@@ -17,6 +20,24 @@ type FileController struct{}
 
 func fiberError(c *fiber.Ctx, status int, message string, err error) error {
 	return c.Status(status).SendString(fmt.Sprintf("%s : %s", message, err.Error()))
+}
+
+func CheckFileStatus(c *fiber.Ctx) error {
+	db := c.Locals("db").(*gorm.DB)
+	id := c.Params("id")
+
+	value, err := strconv.Atoi(id)
+
+	if err != nil {
+		return fiberError(c, fiber.StatusBadRequest, "ID error", fmt.Errorf("id doesn't exist"))
+	}
+
+	balances, err := services.CheckFileStatus(db, value)
+	if err != nil {
+		return fiberError(c, fiber.StatusBadRequest, "ID process error", fmt.Errorf("error to process request"))
+	}
+
+	return c.Status(200).JSON(balances)
 }
 
 func UploadSingleFile(c *fiber.Ctx) error {
@@ -43,17 +64,23 @@ func UploadSingleFile(c *fiber.Ctx) error {
 
 	// email will be decrypted based jwt
 	db := c.Locals("db").(*gorm.DB)
-	workers.PublishToQueue(interfaces.Message{
-		UserId: 1,
-		Email:  "luis@hubla.com",
+	user := c.Locals("user").(interfaces.Credentials)
+	mq, err := workers.PublishToQueue(interfaces.Message{
+		UserId: user.Id,
+		Email:  user.Email,
 		File:   base64.StdEncoding.EncodeToString(bytes),
 	}, db)
 
-	return c.Status(fiber.StatusOK).JSON(fiber.Map{"filepath": "/images/single/ submited as success!"})
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(err)
+	}
+
+	return c.Status(fiber.StatusOK).JSON(mq)
 }
 
 func (*FileController) Route(app *fiber.App) {
-	app.Post("/upload", UploadSingleFile)
+	app.Post("/upload", middlewares.RenewJWT, UploadSingleFile)
+	app.Get("/checkStatus/:id", CheckFileStatus)
 }
 
 func NewFileController() interfaces.Router {

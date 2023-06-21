@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log"
 	"strings"
+	"sync"
 
 	"github.com/luisaugustomelo/hubla-challenge/database/models"
 	"github.com/luisaugustomelo/hubla-challenge/interfaces"
@@ -16,21 +17,18 @@ import (
 )
 
 func ConsumerToQueue(db *gorm.DB) {
-
 	amqpHost := utils.GetEnv("AMQPHOST", "amqp://guest:guest@localhost:5672/")
 	conn, err := amqp.Dial(amqpHost)
 	if err != nil {
 		fmt.Println(err)
 		return
 	}
-	//defer conn.Close()
 
 	ch, err := conn.Channel()
 	if err != nil {
 		fmt.Println(err)
 		return
 	}
-	//defer ch.Close()
 
 	channelName := utils.GetEnv("CNAME", "hubla-sales-queue")
 	q, err := ch.QueueDeclare(
@@ -60,10 +58,20 @@ func ConsumerToQueue(db *gorm.DB) {
 		return
 	}
 
-	go func() {
+	var lock sync.Mutex
+	go func(msgs <-chan amqp.Delivery) {
 		for d := range msgs {
+			lock.Lock()
+			queue, err := ch.QueueInspect(q.Name)
+			if err != nil {
+				// handle error
+				fmt.Println(err)
+			} else {
+				fmt.Printf("Number of pending messages in the queue: %d\n", queue.Messages)
+			}
+
 			m := &interfaces.Message{}
-			err := json.Unmarshal(d.Body, m)
+			err = json.Unmarshal(d.Body, m)
 			if err != nil {
 				fmt.Printf("Error decoding JSON: %s\n", err)
 				continue
@@ -72,7 +80,7 @@ func ConsumerToQueue(db *gorm.DB) {
 			mq := models.QueueProcessing{}
 
 			// Find currently user
-			if err := db.Where("user_id = ?", m.UserId).First(&mq).Error; err != nil {
+			if err := db.Where("user_id = ? AND status = ?", m.UserId, "pending").Last(&mq).Error; err != nil {
 				continue
 			}
 
@@ -120,7 +128,7 @@ func ConsumerToQueue(db *gorm.DB) {
 				continue
 			}
 
-			mq.Status = "successs"
+			mq.Status = "success"
 			mq.Hash = filename
 			mq.Message = "done"
 
@@ -129,6 +137,7 @@ func ConsumerToQueue(db *gorm.DB) {
 			}
 
 			fmt.Printf("Received a message: %s %s %v\n", m.Email, m.File, sales)
+			lock.Unlock()
 		}
-	}()
+	}(msgs)
 }
