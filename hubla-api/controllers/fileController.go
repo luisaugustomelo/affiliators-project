@@ -40,6 +40,24 @@ func CheckFileStatus(c *fiber.Ctx) error {
 	return c.Status(200).JSON(balances)
 }
 
+func GetAllFileProducts(c *fiber.Ctx) error {
+	db := c.Locals("db").(*gorm.DB)
+	id := c.Params("id")
+
+	value, err := strconv.Atoi(id)
+
+	if err != nil {
+		return fiberError(c, fiber.StatusBadRequest, "ID error", fmt.Errorf("id doesn't exist"))
+	}
+
+	sales, err := services.FileProducts(db, value)
+	if err != nil {
+		return fiberError(c, fiber.StatusBadRequest, "ID process error", fmt.Errorf("error to process request"))
+	}
+
+	return c.Status(200).JSON(sales)
+}
+
 func UploadSingleFile(c *fiber.Ctx) error {
 	file, err := c.FormFile("file")
 	if err != nil {
@@ -81,6 +99,7 @@ func UploadSingleFile(c *fiber.Ctx) error {
 func (*FileController) Route(app *fiber.App) {
 	app.Post("/upload", middlewares.RenewJWT, UploadSingleFile)
 	app.Get("/checkStatus/:id", CheckFileStatus)
+	app.Get("/allFileProducts/:id", GetAllFileProducts)
 }
 
 func NewFileController() interfaces.Router {

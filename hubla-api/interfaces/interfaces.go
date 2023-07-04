@@ -15,6 +15,7 @@ type Datastore interface {
 	Save(value interface{}) *gorm.DB
 	Delete(value interface{}, where ...interface{}) *gorm.DB
 	Where(query interface{}, args ...interface{}) *gorm.DB
+	Table(name string, args ...interface{}) (tx *gorm.DB)
 }
 
 type Message struct {

@@ -16,6 +16,132 @@ import (
 	"gorm.io/gorm"
 )
 
+const numProcessingRoutines = 5
+
+type MessageQueue struct {
+	db   *gorm.DB
+	ch   *amqp.Channel
+	q    amqp.Queue
+	lock sync.Mutex
+}
+
+func NewMessageQueue(db *gorm.DB, ch *amqp.Channel, q amqp.Queue) *MessageQueue {
+	return &MessageQueue{
+		db: db,
+		ch: ch,
+		q:  q,
+	}
+}
+
+func (mq *MessageQueue) startProcessing() {
+	msgs, err := mq.ch.Consume(
+		mq.q.Name,
+		"",
+		true,
+		false,
+		false,
+		false,
+		nil,
+	)
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+
+	for i := 0; i < numProcessingRoutines; i++ {
+		go func() {
+			for d := range msgs {
+				mq.processMessage(d)
+			}
+		}()
+	}
+}
+
+func (mq *MessageQueue) processMessage(d amqp.Delivery) {
+	mq.lock.Lock()
+	defer mq.lock.Unlock()
+
+	queue, err := mq.ch.QueueInspect(mq.q.Name)
+	if err != nil {
+		// handle error
+		fmt.Println(err)
+	} else {
+		fmt.Printf("Number of pending messages in the queue: %d\n", queue.Messages)
+	}
+
+	m := &interfaces.Message{}
+	err = json.Unmarshal(d.Body, m)
+	if err != nil {
+		fmt.Printf("Error decoding JSON: %s\n", err)
+		return
+	}
+
+	mq.processFile(m)
+}
+
+func (mq *MessageQueue) processFile(m *interfaces.Message) {
+	mqItem := models.QueueProcessing{}
+
+	if err := mq.db.Where("user_id = ? AND status = ?", m.UserId, "pending").Last(&mqItem).Error; err != nil {
+		return
+	}
+
+	mqItem.Status = "error"
+	mqItem.Message = "wasn't generated"
+
+	fileContent, err := base64.StdEncoding.DecodeString(m.File)
+	if err != nil {
+		mqItem.Hash = "empty"
+		if err := mq.db.Save(&mqItem).Error; err != nil {
+			log.Print(err)
+		}
+		return
+	}
+
+	filename, err := services.ProcessFile(string(fileContent))
+	if err != nil {
+		mqItem.Hash = filename
+		if err := mq.db.Save(&mqItem).Error; err != nil {
+			log.Print(err)
+		}
+		return
+	}
+
+	sales, balances, err := services.ReadSales(filename)
+	if err != nil {
+		mqItem.Hash = filename
+		mqItem.Message = "error to read sales file"
+		if err := mq.db.Save(&mqItem).Error; err != nil {
+			log.Print(err)
+		}
+		return
+	}
+
+	if err := mq.db.CreateInBatches(balances, len(balances)).Error; err != nil {
+		log.Print(err)
+		return
+	}
+
+	for index := range sales {
+		sales[index].UserID = m.UserId
+		sales[index].Hash = strings.TrimSuffix(filename, ".txt")
+	}
+	if err := mq.db.CreateInBatches(sales, len(sales)).Error; err != nil {
+		log.Print(err)
+		return
+	}
+
+	mqItem.Status = "success"
+	mqItem.Hash = filename
+	mqItem.Message = "done"
+
+	if err := mq.db.Save(&mqItem).Error; err != nil {
+		log.Print(err)
+	}
+
+	fmt.Printf("Received a message: %s %s %v\n", m.Email, m.File, sales)
+}
+
 func ConsumerToQueue(db *gorm.DB) {
 	amqpHost := utils.GetEnv("AMQPHOST", "amqp://guest:guest@localhost:5672/")
 	conn, err := amqp.Dial(amqpHost)
@@ -44,100 +170,6 @@ func ConsumerToQueue(db *gorm.DB) {
 		return
 	}
 
-	msgs, err := ch.Consume(
-		q.Name,
-		"",
-		true,
-		false,
-		false,
-		false,
-		nil,
-	)
-	if err != nil {
-		fmt.Println(err)
-		return
-	}
-
-	var lock sync.Mutex
-	go func(msgs <-chan amqp.Delivery) {
-		for d := range msgs {
-			lock.Lock()
-			queue, err := ch.QueueInspect(q.Name)
-			if err != nil {
-				// handle error
-				fmt.Println(err)
-			} else {
-				fmt.Printf("Number of pending messages in the queue: %d\n", queue.Messages)
-			}
-
-			m := &interfaces.Message{}
-			err = json.Unmarshal(d.Body, m)
-			if err != nil {
-				fmt.Printf("Error decoding JSON: %s\n", err)
-				continue
-			}
-
-			mq := models.QueueProcessing{}
-
-			// Find currently user
-			if err := db.Where("user_id = ? AND status = ?", m.UserId, "pending").Last(&mq).Error; err != nil {
-				continue
-			}
-
-			mq.Status = "error"
-			mq.Message = "wasn't generated"
-
-			fileContent, err := base64.StdEncoding.DecodeString(m.File)
-			if err != nil {
-				mq.Hash = "empty"
-				if err := db.Save(&mq).Error; err != nil {
-					log.Print(err)
-				}
-				continue
-			}
-			filename, err := services.ProcessFile(string(fileContent))
-			if err != nil {
-				mq.Hash = filename
-				if err := db.Save(&mq).Error; err != nil {
-					log.Print(err)
-				}
-				continue
-			}
-
-			sales, balances, err := services.ReadSales(filename)
-			if err != nil {
-				mq.Hash = filename
-				mq.Message = "error to read sales file"
-				if err := db.Save(&mq).Error; err != nil {
-					log.Print(err)
-				}
-				continue
-			}
-
-			if err := db.CreateInBatches(balances, len(balances)).Error; err != nil {
-				log.Print(err)
-				continue
-			}
-
-			for index := range sales {
-				sales[index].UserID = m.UserId
-				sales[index].Hash = strings.TrimSuffix(filename, ".txt")
-			}
-			if err := db.CreateInBatches(sales, len(sales)).Error; err != nil {
-				log.Print(err)
-				continue
-			}
-
-			mq.Status = "success"
-			mq.Hash = filename
-			mq.Message = "done"
-
-			if err := db.Save(&mq).Error; err != nil {
-				log.Print(err)
-			}
-
-			fmt.Printf("Received a message: %s %s %v\n", m.Email, m.File, sales)
-			lock.Unlock()
-		}
-	}(msgs)
+	mq := NewMessageQueue(db, ch, q)
+	mq.startProcessing()
 }

@@ -39,6 +39,13 @@ func (mdb *MockedDb) Where(value interface{}, where ...interface{}) *gorm.DB {
 	return args.Get(0).(*gorm.DB)
 }
 
+func (mdb *MockedDb) Table(name string, args ...interface{}) *gorm.DB {
+	args = append([]interface{}{name}, args...)
+	mockedDB := new(gorm.DB)
+	// mock logic for table
+	return mockedDB
+}
+
 func TestCreateUser(t *testing.T) {
 	mockDb := new(MockedDb)
 	mockUser := &models.User{Name: "Test", Email: "test@example.com"}

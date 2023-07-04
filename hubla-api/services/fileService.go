@@ -26,7 +26,7 @@ func ProcessFile(encodedString string) (string, error) {
 		return "", err
 	}
 
-	filePath := "public/single/" + hashedFilename
+	filePath := "hubla-api/public/single/" + hashedFilename
 	err = saveFile([]byte(encodedString), filePath)
 	if err != nil {
 		return "", err
@@ -87,7 +87,7 @@ func calculateBalances(sales []models.SalesFile) map[string]float64 {
 }
 
 func ReadSales(filename string) ([]models.SalesFile, []models.Balance, error) {
-	filePath := "public/single/" + filename
+	filePath := "hubla-api/public/single/" + filename
 	f, err := os.Open(filePath)
 	if err != nil {
 		return nil, nil, err
@@ -167,6 +167,40 @@ func CheckFileStatus(db interfaces.Datastore, id int) ([]models.Balance, error) 
 			return nil, fmt.Errorf("failed to get balances")
 		}
 		return balances, nil
+	}
+
+	if mq.Status == "error" {
+		return nil, fmt.Errorf("error to proccess file")
+	}
+
+	return nil, nil
+}
+
+func FileProducts(db interfaces.Datastore, id int) ([]models.SalesFile, error) {
+	mq := &models.QueueProcessing{}
+	if err := db.Where("id = ?", id).First(mq).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, fmt.Errorf("process not found")
+		}
+		return nil, fmt.Errorf("failed to get process status")
+	}
+
+	var result []struct {
+		SalesFile models.SalesFile
+		SalesType models.SaleType
+	}
+
+	if mq.Status == "success" {
+		var sales []models.SalesFile
+		if err := db.Table("sales_files").Select("product, seller, value, description").Joins("sales_files LEFT JOIN sale_types ON sales_type = sale_types.id").
+			Where("hash = ?", strings.TrimSuffix(mq.Hash, ".txt")).
+			Find(&result).Error; err != nil {
+			if errors.Is(err, gorm.ErrRecordNotFound) {
+				return nil, fmt.Errorf("balances not found")
+			}
+			return nil, fmt.Errorf("failed to get balances")
+		}
+		return sales, nil
 	}
 
 	if mq.Status == "error" {
