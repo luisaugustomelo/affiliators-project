@@ -1,4 +1,4 @@
-# hubla-challenge
+# affiliators project
 
 This repository is separated into 2 projects, a backend project in GoLang and a backend project using React + Typescript. Below will be presented how to run both projects.
 
